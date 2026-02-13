@@ -1,4 +1,4 @@
-name: GhostPRO_Final_Stable
+name: GhostPRO_Force_Final
 on: [push]
 
 jobs:
@@ -11,20 +11,20 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install Dependencies
+      - name: Install Build Tools
         run: |
           sudo apt update
           sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential
           pip install --user --upgrade pip "Cython<3.0" buildozer
-      - name: Build APK
+      - name: Build Ghost PRO
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Собираем без тяжелых pandas, чтобы не падало, но с фиксом либ
+          # Принудительно собираем с нуля, чтобы подцепить иконку
           buildozer android debug
         env:
           BUILDOZER_ALLOW_ORG_GHOST: 1
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: GhostPRO_Stable_APK
+          name: GhostPRO_Ready
           path: bin/*.apk
