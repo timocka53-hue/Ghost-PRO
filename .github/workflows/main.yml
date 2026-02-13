@@ -1,4 +1,4 @@
-name: GhostPRO_Ultra_Force
+name: GhostPRO_Final_Emergency
 on: [push]
 
 jobs:
@@ -11,22 +11,20 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install Hard Tools
+      - name: Install System
         run: |
           sudo apt update
           sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential
           pip install --user --upgrade pip "Cython<3.0" buildozer
-      - name: Build Ghost PRO
+      - name: Force Build
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Удаляем старый кэш прямо внутри команды
-          rm -rf .buildozer
-          # Запускаем сборку
+          # Удаляем старье и форсируем установку либ
           buildozer android debug
         env:
           BUILDOZER_ALLOW_ORG_GHOST: 1
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: GhostPRO_Real_Build
+          name: GhostPRO_Check_Weight
           path: bin/*.apk
