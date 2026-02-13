@@ -1,4 +1,4 @@
-name: GhostPRO_Final_Emergency
+name: GhostPRO_Clean_Build
 on: [push]
 
 jobs:
@@ -11,20 +11,20 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install System
+      - name: Install Tools
         run: |
           sudo apt update
           sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential
-          pip install --user --upgrade pip "Cython<3.0" buildozer
-      - name: Force Build
+          pip install --user --upgrade "Cython<3.0" buildozer
+      - name: Build
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Удаляем старье и форсируем установку либ
+          # Мы НЕ используем старые кэши, собираем с нуля
           buildozer android debug
         env:
           BUILDOZER_ALLOW_ORG_GHOST: 1
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: GhostPRO_Check_Weight
+          name: GhostPRO_Real_APK
           path: bin/*.apk
