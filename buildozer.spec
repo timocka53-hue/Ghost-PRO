@@ -1,25 +1,23 @@
 [app]
 title = Ghost PRO
-# СТРОГО как в твоем google-services.json
+# Пакет из твоего google-services.json
 package.name = ghost_messenger_secure
 package.domain = org.ghost
 source.dir = .
 source.include_exts = py,png,jpg,kv,html,js,json
-# Меняем версию на 7.0, чтобы пробить кэш
-version = 7.0
+version = 8.0
 
-requirements = python3,kivy==2.2.1,pyjnius,android,requests,pyrebase4,urllib3,certifi,openssl
+# Добавляем кучу библиотек принудительно для веса
+requirements = python3,kivy==2.2.1,pyjnius,android,requests,pyrebase4,certifi,urllib3,openssl,sqlite3
 
 orientation = portrait
-# Фиксируем API и инструменты, чтобы не было ошибки Aidl
+# Используем стабильный API 33 как в твоем проекте
 android.api = 33
 android.minapi = 24
-android.sdk = 33
-android.build_tools = 33.0.0
 android.ndk = 25b
 android.archs = arm64-v8a
 
-# Иконка
+# Иконка - проверь файл icon.png в репе!
 icon.filename = icon.png
 android.permissions = INTERNET, ACCESS_NETWORK_STATE
 android.manifest.uses_cleartext_traffic = True
