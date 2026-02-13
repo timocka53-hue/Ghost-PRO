@@ -5,6 +5,7 @@ from kivy.clock import Clock
 
 os.environ['SSL_CERT_FILE'] = certifi.where()
 
+# Данные из твоего google-services.json
 firebase_config = {
     "apiKey": "AIzaSyAbiRCuR9egtHKg0FNzzBdL9dNqPqpPLNk",
     "authDomain": "ghost-pro-5aa22.firebaseapp.com",
@@ -68,14 +69,14 @@ class GhostApp(App):
                 if auth.get_account_info(user['idToken'])['users'][0]['emailVerified']:
                     self.run_js("log('ДОСТУП ОТКРЫТ. Ghost PRO активен.', '#0f0')")
                 else:
-                    self.run_js("log('Подтвердите Email для входа!', '#ff0')")
+                    self.run_js("log('Сначала подтвердите Email!', '#ff0')")
         except Exception as ex:
             self.run_js(f"log('ОШИБКА: {str(ex)[:40]}', '#f00')")
 
     @run_on_ui_thread
     def run_js(self, code):
-        self.wv.evaluateJavascript(code, None)
+        try: self.wv.evaluateJavascript(code, None)
+        except: pass
 
 if __name__ == "__main__":
     GhostApp().run()
-
