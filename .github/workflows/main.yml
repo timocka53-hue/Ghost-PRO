@@ -1,4 +1,4 @@
-name: GHOST_PRO_ULTRABUILD
+name: GHOST_ULTIMATE_BUILD
 on: [push]
 
 jobs:
@@ -6,23 +6,23 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install dependencies
+      - name: Install Buildozer dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential
+          sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential libltdl-dev
           pip install --user --upgrade "Cython<3.0" buildozer
 
-      - name: Clean and Build
+      - name: Force Clean and Build
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Мы НЕ делаем buildozer clean, мы просто удаляем папку кэша вручную
+          # Полное уничтожение любого кэша перед сборкой
+          rm -rf ~/.buildozer
           rm -rf .buildozer
           buildozer android debug
-        env:
-          BUILDOZER_ALLOW_ORG_GHOST: 1
