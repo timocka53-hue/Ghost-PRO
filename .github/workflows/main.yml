@@ -17,8 +17,16 @@ jobs:
           
       - name: Build Android APK
         run: |
-          # Добавляем --yes, чтобы робот сам отвечал на все вопросы системы
-          flet build apk --project "Ghost PRO" --yes
+          # --module добавляет библиотеки ВНУТРЬ приложения
+          # --icon указывает на твой файл icon.png
+          flet build apk \
+            --project "Ghost PRO" \
+            --module pyrebase4 \
+            --module cryptography \
+            --module httplib2 \
+            --module requests \
+            --icon "./icon.png" \
+            --yes
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
