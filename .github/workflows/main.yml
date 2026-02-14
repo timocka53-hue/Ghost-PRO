@@ -1,4 +1,4 @@
-name: GHOST_PRO_FINAL
+name: GHOST_PRO_FINAL_STABLE
 on: [push]
 
 jobs:
@@ -14,12 +14,12 @@ jobs:
       - name: Build APK
         run: |
           pip install flet
-          # Создаем список библиотек для вшития в APK
+          # Генерируем требования прямо в билде
           echo "flet" > requirements.txt
           echo "pyrebase4" >> requirements.txt
           echo "cryptography" >> requirements.txt
           echo "requests" >> requirements.txt
-          # Чистая сборка без лишних флагов
+          # Чистая сборка без кривых аргументов
           flet build apk --project "Ghost PRO" --yes
             
       - name: Upload
