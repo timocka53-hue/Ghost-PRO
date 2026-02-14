@@ -1,4 +1,4 @@
-name: GHOST_PRO_ULTRA_BUILD
+name: GHOST_PRO_Beta
 on: [push]
 
 jobs:
@@ -11,22 +11,19 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install All Dependencies
+      - name: Build APK
         run: |
-          pip install flet pyrebase4 cryptography requests
-          # Создаем файл зависимостей принудительно
+          pip install flet
+          # Генерируем требования, чтобы они попали в билд
           echo "flet" > requirements.txt
           echo "pyrebase4" >> requirements.txt
           echo "cryptography" >> requirements.txt
           echo "requests" >> requirements.txt
-
-      - name: Build Heavy APK
-        run: |
-          # Используем базовую команду без лишних флагов
+          # Сборка без экспериментальных флагов (они вызывали ошибки на скринах)
           flet build apk --project "Ghost PRO" --yes
             
-      - name: Upload Final APK
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Final-Test
+          name: Ghost-PRO-Beta
           path: build/apk/*.apk
