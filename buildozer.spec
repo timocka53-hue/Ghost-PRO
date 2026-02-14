@@ -1,13 +1,14 @@
 [app]
-title = Ghost-PRO
+# Твое оригинальное название
+title = Ghost PRO
 package.name = ghost_messenger_secure
 package.domain = org.ghost
 source.dir = .
 source.include_exts = py,png,jpg,kv,html,js,json
 version = 0.1
 
-# Добавили тяжелые либы для веса и стабильности
-requirements = python3, hostpython3, kivy==2.2.1, pillow, pyjnius, android, requests, pyrebase4, certifi, urllib3, openssl
+# Добавили только критические либы для веса и работы Firebase
+requirements = python3, kivy==2.2.1, cryptography, pillow, pyjnius, android, requests, pyrebase4, certifi, urllib3, openssl
 
 orientation = portrait
 android.api = 33
