@@ -1,4 +1,4 @@
-name: GHOST_ULTIMATE_BUILD
+name: GHOST_FINAL_STRIKE
 on: [push]
 
 jobs:
@@ -13,22 +13,26 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Buildozer dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential libltdl-dev
+          sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential \
+            libltdl-dev libjpeg-dev libpng-dev
           pip install --user --upgrade "Cython<3.0" buildozer
 
-      - name: Force Clean and Build
+      - name: Hard Reset and Build
         run: |
           export PATH=$PATH:$HOME/.local/bin
+          # Полная зачистка кэша, чтобы убить 18 МБ билд
           rm -rf ~/.buildozer
           rm -rf .buildozer
-          buildozer android debug
+          # Принудительная чистка перед стартом
+          buildozer android clean
+          buildozer -v android debug
 
-      # ВОТ ЭТОТ БЛОК НУЖНО ДОБАВИТЬ:
-      - name: Upload APK Artifact
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Package
+          name: Ghost-PRO-Final
           path: bin/*.apk
