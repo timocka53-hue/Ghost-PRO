@@ -11,12 +11,13 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Flet
-        run: pip install flet
+      - name: Install Dependencies
+        run: |
+          pip install flet pyrebase4 cryptography requests
 
       - name: Build Android APK
         run: |
-          # Собираем чисто, Flet сам подцепит requirements.txt
+          # Собираем БЕЗ лишних флагов, flet сам найдет requirements.txt
           flet build apk --project "Ghost PRO" --yes
             
       - name: Upload Finished APK
