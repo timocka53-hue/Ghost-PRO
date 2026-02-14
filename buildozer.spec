@@ -4,10 +4,10 @@ package.name = ghost_messenger_secure
 package.domain = org.ghost
 source.dir = .
 source.include_exts = py,png,jpg,kv,html,js,json
-version = 0.1
+version = 2.0.1
 
-# ВАЖНО: добавил hostpython3 и переставил cryptography в начало
-requirements = python3, hostpython3, kivy==2.2.1, cryptography, requests, pyrebase4, certifi, urllib3, openssl, pillow, pyjnius, android
+# ВАЖНО: Мы добавили kivymd и pycryptodome для веса и безопасности
+requirements = python3, kivy==2.2.1, kivymd, pycryptodome, requests, pyrebase4, certifi, urllib3, openssl, pyjnius, android
 
 orientation = portrait
 android.api = 33
