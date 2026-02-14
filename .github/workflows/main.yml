@@ -22,7 +22,13 @@ jobs:
       - name: Force Clean and Build
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Полное уничтожение любого кэша перед сборкой
           rm -rf ~/.buildozer
           rm -rf .buildozer
           buildozer android debug
+
+      # ВОТ ЭТОТ БЛОК НУЖНО ДОБАВИТЬ:
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ghost-PRO-Package
+          path: bin/*.apk
