@@ -1,14 +1,8 @@
-        import flet as ft
-import sys
+import flet as ft
+import pyrebase
+from cryptography.fernet import Fernet
 
-# Пытаемся импортировать модули так, чтобы не было черного экрана
-try:
-    import pyrebase
-    from cryptography.fernet import Fernet
-    STATUS = "SYSTEM_READY: ENCRYPTION ACTIVE"
-except Exception as e:
-    STATUS = f"SYSTEM_ERROR: {str(e)}"
-
+# КОНФИГУРАЦИЯ
 config = {
     "apiKey": "AIzaSyAbiRCuR9egtHKg0FNzzBdL9dNqPqpPLNk",
     "authDomain": "ghost-pro-5aa22.firebaseapp.com",
@@ -19,53 +13,81 @@ config = {
     "appId": "1:332879455079:android:15c36642c62d13e0dd05c2"
 }
 
+# Инициализация
+firebase = pyrebase.initialize_app(config)
+auth = firebase.auth()
+db = firebase.database()
+cipher = Fernet(b'GhostProSecureKey123456789012345=')
+
 def main(page: ft.Page):
     page.title = "Ghost PRO Official"
     page.bgcolor = "#000000"
     page.theme_mode = ft.ThemeMode.DARK
+    page.padding = 10
     
-    # ТЕРМИНАЛ
-    terminal = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=250)
+    user_session = {"uid": None, "name": "Guest"}
+    terminal = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=200)
+
     def log(msg, color="#00FF00"):
         terminal.controls.append(ft.Text(f"> {msg}", color=color, font_family="monospace", size=12))
         page.update()
 
-    # Поля
     email_f = ft.TextField(label="EMAIL", border_color="#00FF00", color="#00FF00")
     pass_f = ft.TextField(label="PASSWORD", password=True, border_color="#00FF00", color="#00FF00")
 
-    def login(e):
+    def handle_login(e):
         # ТВОЯ АДМИНКА
         if email_f.value == "adminpan" and pass_f.value == "TimaIssam2026":
-            log("ADMIN ACCESS GRANTED", "yellow")
+            user_session["name"] = "ADMIN_PRO"
             page.go("/chat")
-        else:
-            log("AUTH ATTEMPT...")
+            return
+        try:
+            user = auth.sign_in_with_email_and_password(email_f.value, pass_f.value)
+            user_session["uid"] = user['localId']
+            page.go("/chat")
+        except:
+            log("ACCESS_DENIED", "red")
 
     def route_change(route):
         page.views.clear()
         if page.route == "/":
             page.views.append(
                 ft.View("/", [
-                    ft.Text("GHOST_OS terminal", color="#00FF00", size=20),
+                    ft.Text("GHOST_OS: TERMINAL", color="#00FF00", size=20),
                     ft.Container(terminal, border=ft.border.all(1, "#00FF00"), padding=10),
                     email_f, pass_f,
-                    ft.ElevatedButton("EXECUTE", on_click=login, bgcolor="#114411", color="white", width=400)
+                    ft.ElevatedButton("LOG_IN", on_click=handle_login, bgcolor="#114411", color="white", width=400)
                 ])
             )
         elif page.route == "/chat":
+            chat_list = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True)
+            msg_input = ft.TextField(placeholder="Encrypted message...", expand=True)
+            
+            def send(e):
+                if msg_input.value:
+                    enc = cipher.encrypt(msg_input.value.encode()).decode()
+                    db.child("messages").push({"user": user_session["name"], "text": enc})
+                    chat_list.controls.append(ft.Text(f"YOU: {msg_input.value}", color="#00FF00"))
+                    msg_input.value = ""
+                    page.update()
+
             page.views.append(
                 ft.View("/chat", [
                     ft.AppBar(title=ft.Text("GHOST_CHAT"), bgcolor="#001100"),
-                    ft.Text("MESSENGER ACTIVE (E2EE)", color="#00FF00"),
-                    ft.TextField(placeholder="Search user or type..."),
-                    ft.Row([ft.IconButton(ft.icons.MIC), ft.IconButton(ft.icons.CAMERA), ft.IconButton(ft.icons.SEND)])
+                    ft.TextField(label="ПОИСК ЮЗЕРА", border_color="#00FF00"),
+                    chat_list,
+                    ft.Row([
+                        ft.IconButton(ft.icons.MIC, icon_color="#00FF00"),
+                        ft.IconButton(ft.icons.ATTACH_FILE, icon_color="#00FF00"),
+                        msg_input,
+                        ft.IconButton(ft.icons.SEND, on_click=send, icon_color="#00FF00")
+                    ])
                 ])
             )
         page.update()
 
     page.on_route_change = route_change
     page.go("/")
-    log(STATUS)
+    log("SYSTEM: ONLINE")
 
 ft.app(target=main)
