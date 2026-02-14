@@ -1,8 +1,8 @@
 import flet as ft
 import pyrebase
-import random
+import time
 
-# КОНФИГ ИЗ ТВОЕГО google-services.json
+# Конфиг из твоего google-services.json
 config = {
     "apiKey": "AIzaSyAbiRCuR9egtHKg0FNzzBdL9dNqPqpPLNk",
     "authDomain": "ghost-pro-5aa22.firebaseapp.com",
@@ -15,122 +15,101 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
+db = firebase.database()
 
 def main(page: ft.Page):
     page.title = "Ghost PRO"
     page.bgcolor = "#000000"
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 20
-    page.fonts = {"Courier": "monospace"}
+    page.padding = 10
     
-    # Хранилище сессии
-    user_data = {"uid": None, "is_admin": False}
+    user_data = {"uid": None, "username": None}
 
-    # Виджет терминала (как в твоем дизайне)
-    terminal = ft.Column(
-        scroll=ft.ScrollMode.ALWAYS,
-        height=300,
-        controls=[ft.Text("[SYSTEM]: Ожидание авторизации...", color="#00FF00", font_family="Courier")]
-    )
-
-    def log_to_terminal(text, color="#00FF00"):
-        terminal.controls.append(ft.Text(f"> {text}", color=color, font_family="Courier"))
+    # --- ЭЛЕМЕНТЫ ТЕРМИНАЛА ---
+    terminal = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=250)
+    
+    def log(msg, color="#00FF00"):
+        terminal.controls.append(ft.Text(f"> {msg}", color=color, font_family="monospace", size=12))
         page.update()
 
-    def handle_auth(e):
-        email = email_input.value
-        password = pass_input.value
-        
-        # Проверка на Админ-панель (как ты просил)
-        if email == "adminpan" and password == "TimaIssam2026":
-            log_to_terminal("ДОСТУП В АДМИН-ПАНЕЛЬ РАЗРЕШЕН", color="yellow")
-            user_data["is_admin"] = True
-            page.go("/admin")
+    # --- ЛОГИКА ---
+    def handle_register(e):
+        if not reg_user.value or not reg_email.value:
+            log("ERROR: EMPTY FIELDS", "red")
             return
-
         try:
-            user = auth.sign_in_with_email_and_password(email, password)
+            user = auth.create_user_with_email_and_password(reg_email.value, reg_pass.value)
+            auth.send_email_verification(user['idToken'])
+            db.child("users").child(user['localId']).set({"username": reg_user.value})
+            log(f"SUCCESS: CONFIRM EMAIL {reg_email.value}", "yellow")
+        except Exception as ex:
+            log(f"SYSTEM_ERROR: {str(ex)}", "red")
+
+    def handle_login(e):
+        if reg_email.value == "adminpan" and reg_pass.value == "TimaIssam2026":
+            log("ADMIN ACCESS GRANTED", "yellow")
+            page.go("/chat")
+            return
+        try:
+            user = auth.sign_in_with_email_and_password(reg_email.value, reg_pass.value)
             user_data["uid"] = user['localId']
-            log_to_terminal("АВТОРИЗАЦИЯ УСПЕШНА. ВХОД...")
+            log("ACCESS GRANTED. LOADING...")
             page.go("/chat")
         except:
-            log_to_terminal("ОШИБКА: ОТКАЗАНО В ДОСТУПЕ", color="red")
+            log("INVALID ACCESS KEY", "red")
 
-    # Поля ввода в стиле Terminal
-    email_input = ft.TextField(
-        label="EMAIL_ADDRESS", 
-        border_color="#00FF00", 
-        color="#00FF00", 
-        bgcolor="#001100",
-        font_family="Courier"
-    )
-    pass_input = ft.TextField(
-        label="ACCESS_PASSWORD", 
-        password=True, 
-        can_reveal_password=True,
-        border_color="#00FF00", 
-        color="#00FF00", 
-        bgcolor="#001100",
-        font_family="Courier"
-    )
+    # --- ПОЛЯ ВВОДА ---
+    reg_user = ft.TextField(label="USER_NAME", border_color="#00FF00", color="#00FF00")
+    reg_email = ft.TextField(label="EMAIL", border_color="#00FF00", color="#00FF00")
+    reg_pass = ft.TextField(label="PASSWORD", password=True, border_color="#00FF00", color="#00FF00")
 
     def route_change(route):
         page.views.clear()
         
-        # ГЛАВНЫЙ ЭКРАН (Твой дизайн с кнопками)
-        page.views.append(
-            ft.View("/", [
-                ft.Text("GHOST_OS: ENCRYPTED_LINK", color="#00FF00", size=12, font_family="Courier"),
-                ft.Container(
-                    content=terminal,
-                    border=ft.border.all(1, "#00FF00"),
-                    padding=10,
-                    bgcolor="#000A00"
-                ),
-                ft.VerticalDivider(height=10, opacity=0),
-                email_input,
-                pass_input,
-                ft.ElevatedButton(
-                    "REGISTRATION", 
-                    on_click=lambda _: log_to_terminal("ЗАПУСК РЕГИСТРАЦИИ..."),
-                    bgcolor="#55FF55", color="#000000", width=400
-                ),
-                ft.ElevatedButton(
-                    "LOG_IN", 
-                    on_click=handle_auth,
-                    bgcolor="#228822", color="#FFFFFF", width=400
-                ),
-            ])
-        )
-
-        # ЭКРАН ЧАТА
+        # ЭКРАН ВХОДА (Твой дизайн)
+        if page.route == "/":
+            page.views.append(
+                ft.View("/", [
+                    ft.Text("GHOST_OS: ENCRYPTED_LINK", color="#00FF00"),
+                    ft.Container(content=terminal, border=ft.border.all(1, "#00FF00"), padding=10, bgcolor="#000A00"),
+                    reg_user, reg_email, reg_pass,
+                    ft.Row([
+                        ft.ElevatedButton("REGISTRATION", on_click=handle_register, bgcolor="#55FF55", color="black", expand=True),
+                        ft.ElevatedButton("LOG_IN", on_click=handle_login, bgcolor="#228822", color="white", expand=True),
+                    ])
+                ])
+            )
+            
+        # ЭКРАН МЕССЕНДЖЕРА
         if page.route == "/chat":
+            chat_messages = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True)
+            search_box = ft.TextField(label="FIND_GHOST_BY_NAME", border_color="#00FF00")
+            msg_input = ft.TextField(placeholder="TYPE_MESSAGE...", expand=True)
+
+            def send_msg(e):
+                if msg_input.value:
+                    chat_messages.controls.append(ft.Text(f"YOU: {msg_input.value}", color="#00FF00"))
+                    msg_input.value = ""
+                    page.update()
+
             page.views.append(
                 ft.View("/chat", [
-                    ft.AppBar(title=ft.Text("GHOST_MESSENGER"), bgcolor="#001100", color="#00FF00"),
-                    ft.Text("Зашифрованный канал связи активен", color="#00FF00"),
-                    ft.ListView(expand=True, spacing=10),
+                    ft.AppBar(title=ft.Text("GHOST_MESSENGER_V1"), bgcolor="#001100", color="#00FF00"),
+                    search_box,
+                    ft.Divider(color="#00FF00"),
+                    chat_messages,
                     ft.Row([
-                        ft.TextField(expand=True, border_color="#00FF00"),
-                        ft.IconButton(ft.icons.SEND, icon_color="#00FF00")
+                        ft.IconButton(ft.icons.MIC, icon_color="#00FF00"),
+                        ft.IconButton(ft.icons.ATTACH_FILE, icon_color="#00FF00"),
+                        msg_input,
+                        ft.IconButton(ft.icons.SEND, on_click=send_msg, icon_color="#00FF00")
                     ])
-                ], bgcolor="#000000")
-            )
-
-        # АДМИН-ПАНЕЛЬ
-        if page.route == "/admin":
-            page.views.append(
-                ft.View("/admin", [
-                    ft.AppBar(title=ft.Text("ADMIN_SYSTEM_V2"), bgcolor="yellow", color="black"),
-                    ft.Text("УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ", size=20, color="yellow"),
-                    ft.ElevatedButton("ПОЛУЧИТЬ ЛОГИ СИСТЕМЫ", bgcolor="grey"),
-                    ft.ElevatedButton("ЗАБЛОКИРОВАТЬ ID", bgcolor="red", color="white"),
-                    ft.TextButton("ВЫХОД", on_click=lambda _: page.go("/"))
                 ], bgcolor="#000000")
             )
         page.update()
 
     page.on_route_change = route_change
-    page.go(page.route)
+    page.go("/")
+    log("[SYSTEM]: Ожидание авторизации...")
 
 ft.app(target=main)
