@@ -13,17 +13,21 @@ jobs:
 
       - name: Install Flet Build Tools
         run: |
-          pip install flet
-          # Создаем список зависимостей для упаковки внутрь APK
-          echo "pyrebase4" > requirements.txt
+          pip install flet pyrebase4 cryptography requests
+          # Создаем файл зависимостей для сборщика
+          echo "flet" > requirements.txt
+          echo "pyrebase4" >> requirements.txt
           echo "cryptography" >> requirements.txt
           echo "requests" >> requirements.txt
 
       - name: Build Android APK
         run: |
-          # Используем базовую команду сборки. 
-          # Flet сам подхватит requirements.txt и icon.png из корня.
-          flet build apk --project "Ghost PRO" --yes
+          # Указываем активы и принудительно ставим зависимости
+          flet build apk \
+            --project "Ghost PRO" \
+            --include-ext-packages flet,pyrebase4,cryptography,requests \
+            --assets ./assets \
+            --yes
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
