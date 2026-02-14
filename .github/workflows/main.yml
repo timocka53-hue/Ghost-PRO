@@ -1,4 +1,4 @@
-name: GHOST_PRO_FINAL_BUILD
+name: GHOST_PRO_FINAL_STABLE
 on: [push]
 
 jobs:
@@ -11,20 +11,16 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Build Tools
-        run: |
-          pip install flet pyrebase4 cryptography requests
+      - name: Install Flet
+        run: pip install flet
 
       - name: Build Android APK
         run: |
-          # ВАЖНО: Мы добавляем --include-ext-packages
-          flet build apk \
-            --project "Ghost PRO" \
-            --include-ext-packages pyrebase4,cryptography,requests \
-            --yes
+          # Собираем чисто, Flet сам подцепит requirements.txt
+          flet build apk --project "Ghost PRO" --yes
             
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Final
+          name: Ghost-PRO-Stable
           path: build/apk/*.apk
