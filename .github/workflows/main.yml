@@ -1,4 +1,4 @@
-name: GHOST_PRO_FINAL_STRIKE
+name: GHOST_PRO_FINAL_BUILD
 on: [push]
 
 jobs:
@@ -13,26 +13,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt update
           sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev \
             libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev build-essential \
             libltdl-dev libjpeg-dev libpng-dev
-          pip install --user --upgrade "Cython<3.0" buildozer
+          pip install --user --no-cache-dir --upgrade buildozer cython
 
-      - name: Force Clean and Build
+      - name: Clean and Force Build
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Удаляем остатки старых попыток
+          # Удаляем старые следы 19.4 МБ билда
           rm -rf .buildozer
-          # Принудительно чистим кэш p4a (python-for-android)
-          # Это заставит его перекачать либы из твоего spec-файла
-          buildozer android p4a -- clean_builds
+          rm -rf ~/.buildozer
+          # Собираем с нуля
           buildozer -v android debug
 
-      - name: Upload APK
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Final
+          name: Ghost-PRO-Real-Package
           path: bin/*.apk
