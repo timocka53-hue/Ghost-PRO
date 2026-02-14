@@ -24,7 +24,7 @@ jobs:
       - name: Build APK
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Собираем как есть, без сброса, чтобы не было ошибок путей
+          # Просто сборка. Без удаления папок, чтобы не ломать пути.
           buildozer -v android debug
 
       - name: Upload Finished APK
