@@ -1,0 +1,4 @@
+flet
+pyrebase4
+cryptography
+requests
