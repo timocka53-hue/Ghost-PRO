@@ -1,4 +1,4 @@
-name: GHOST_FINAL_STRIKE
+name: GHOST_PRO_BUILD
 on: [push]
 
 jobs:
@@ -21,18 +21,14 @@ jobs:
             libltdl-dev libjpeg-dev libpng-dev
           pip install --user --upgrade "Cython<3.0" buildozer
 
-      - name: Hard Reset and Build
+      - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Полная зачистка кэша, чтобы убить 18 МБ билд
-          rm -rf ~/.buildozer
-          rm -rf .buildozer
-          # Принудительная чистка перед стартом
-          buildozer android clean
+          # Просто запуск без ломающих команд
           buildozer -v android debug
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Final
+          name: Ghost-PRO-APK
           path: bin/*.apk
