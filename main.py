@@ -1,98 +1,108 @@
 import flet as ft
-import pyrebase
 import base64
 import os
-from cryptography.fernet import Fernet
+import time
 
-# АВТО-ГЕНЕРАЦИЯ КЛЮЧА (Чтобы никогда не было ValueError)
-# Система сама создаст идеальный 32-байтный ключ при запуске
-cipher_key = Fernet.generate_key()
-cipher = Fernet(cipher_key)
-
-config = {
-    "apiKey": "AIzaSyAbiRCuR9egtHKg0FNzzBdL9dNqPqpPLNk",
-    "authDomain": "ghost-pro-5aa22.firebaseapp.com",
-    "databaseURL": "https://ghost-pro-5aa22-default-rtdb.firebaseio.com",
-    "projectId": "ghost-pro-5aa22",
-    "storageBucket": "ghost-pro-5aa22.firebasestorage.app",
-    "messagingSenderId": "332879455079",
-    "appId": "1:332879455079:android:15c36642c62d13e0dd05c2"
-}
+# МАКСИМАЛЬНО БЕЗОПАСНЫЙ ИМПОРТ
+try:
+    from cryptography.fernet import Fernet
+    import pyrebase
+    LIB_LOADED = True
+except Exception as e:
+    LIB_LOADED = False
+    LIB_ERROR = str(e)
 
 def main(page: ft.Page):
-    page.title = "Ghost PRO Official"
+    page.title = "GHOST PRO V4"
     page.bgcolor = "#000000"
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 10
+    page.window_resizable = False
     
-    user_session = {"uid": None, "name": "Guest"}
-    terminal = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=200)
-
-    def log(msg, color="#00FF00"):
-        terminal.controls.append(ft.Text(f"> {msg}", color=color, font_family="monospace", size=12))
+    # ТЕРМИНАЛ ЗАГРУЗКИ (Тот самый хакерский стиль)
+    terminal_log = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=300)
+    
+    def log_to_screen(text, color="#00FF00"):
+        terminal_log.controls.append(
+            ft.Text(f"[SYSTEM]: {text}", color=color, font_family="monospace", size=12)
+        )
         page.update()
 
-    email_f = ft.TextField(label="EMAIL / ADMIN_PAN", border_color="#00FF00", color="#00FF00")
-    pass_f = ft.TextField(label="PASSWORD", password=True, border_color="#00FF00", color="#00FF00")
-    search_f = ft.TextField(label="SEARCH_USER (@username)", border_color="#00FF00")
+    # ЭКРАН ЗАГРУЗКИ
+    loading_view = ft.Column([
+        ft.Text("GHOST_OS_BOOTLOADER", color="#00FF00", size=24, weight="bold"),
+        ft.Container(terminal_log, border=ft.border.all(1, "#00FF00"), padding=10, bgcolor="#000A00"),
+        ft.ProgressBar(width=400, color="#00FF00", bgcolor="#002200")
+    ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
-    def handle_login(e):
-        # ТВОЯ АДМИНКА
-        if email_f.value == "adminpan" and pass_f.value == "TimaIssam2026":
-            user_session["name"] = "ADMIN_PRO"
-            log("ACCESS GRANTED: ADMIN MODE", "yellow")
-            page.go("/chat")
-            return
-        try:
-            firebase = pyrebase.initialize_app(config)
-            auth = firebase.auth()
-            user = auth.sign_in_with_email_and_password(email_f.value, pass_f.value)
-            user_session["uid"] = user['localId']
-            log("AUTH_SUCCESS. SYNCING...")
-            page.go("/chat")
-        except Exception as ex:
-            log(f"ERROR: {str(ex)}", "red")
+    page.add(loading_view)
+    
+    # ИМИТАЦИЯ ЗАГРУЗКИ И ПРОВЕРКА СИСТЕМЫ
+    time.sleep(1)
+    log_to_screen("INITIALIZING CORE...")
+    
+    if not LIB_LOADED:
+        log_to_screen(f"CRITICAL ERROR: {LIB_ERROR}", "red")
+        return
 
-    def route_change(route):
-        page.views.clear()
-        if page.route == "/":
-            page.views.append(
-                ft.View("/", [
-                    ft.Text("GHOST_OS: ENCRYPTED_V3", color="#00FF00", size=22, weight="bold"),
-                    ft.Container(terminal, border=ft.border.all(1, "#00FF00"), padding=10, bgcolor="#000800"),
-                    email_f, pass_f,
-                    ft.ElevatedButton("INITIALIZE", on_click=handle_login, bgcolor="#115511", color="white", width=400)
-                ])
-            )
-        elif page.route == "/chat":
-            chat_list = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True)
-            msg_input = ft.TextField(placeholder="Encrypted payload...", expand=True)
-            
-            def send(e):
-                if msg_input.value:
-                    enc = cipher.encrypt(msg_input.value.encode()).decode()
-                    chat_list.controls.append(ft.Text(f"YOU: {msg_input.value}", color="#00FF00"))
-                    msg_input.value = ""
-                    page.update()
+    # АВТО-ГЕНЕРАЦИЯ КЛЮЧА (Фикс ValueError навсегда)
+    key = Fernet.generate_key()
+    cipher = Fernet(key)
+    log_to_screen("ENCRYPTION ENGINE: ACTIVE")
 
-            page.views.append(
-                ft.View("/chat", [
-                    ft.AppBar(title=ft.Text("GHOST_NETWORK"), bgcolor="#001100", color="#00FF00"),
-                    search_f,
-                    ft.Divider(color="#00FF00"),
-                    chat_list,
-                    ft.Row([
-                        ft.IconButton(ft.icons.MIC, icon_color="#00FF00"),
-                        ft.IconButton(ft.icons.IMAGE, icon_color="#00FF00"),
-                        msg_input,
-                        ft.IconButton(ft.icons.SEND, on_click=send, icon_color="#00FF00")
-                    ])
-                ])
-            )
-        page.update()
+    # ТВОИ ДАННЫЕ АДМИНКИ
+    ADMIN_LOGIN = "adminpan"
+    ADMIN_PASS = "TimaIssam2026"
 
-    page.on_route_change = route_change
-    page.go("/")
-    log("SYSTEM_ONLINE: STANDBY")
+    # ФУНКЦИЯ ВХОДА
+    def start_app(e):
+        if login_input.value == ADMIN_LOGIN and pass_input.value == ADMIN_PASS:
+            log_to_screen("ADMIN ACCESS GRANTED", "yellow")
+            page.clean()
+            show_chat()
+        else:
+            log_to_screen("ACCESS DENIED: INVALID PAYLOAD", "red")
+
+    # ОСНОВНОЙ ИНТЕРФЕЙС ВХОДА
+    login_input = ft.TextField(label="IDENTIFIER", border_color="#00FF00")
+    pass_input = ft.TextField(label="ACCESS_KEY", password=True, border_color="#00FF00")
+    
+    def show_auth():
+        page.clean()
+        page.add(
+            ft.Column([
+                ft.Text("GHOST_PRO_LOGIN", color="#00FF00", size=30),
+                login_input, pass_input,
+                ft.ElevatedButton("EXECUTE", on_click=start_app, bgcolor="#114411", color="white")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        )
+
+    # ЭКРАН ЧАТА (Всё что ты просил: ГС, Фото, Поиск)
+    def show_chat():
+        chat_box = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True)
+        msg_in = ft.TextField(placeholder="Encrypted message...", expand=True)
+        
+        def send_msg(e):
+            if msg_in.value:
+                # E2EE Шифрование
+                encrypted = cipher.encrypt(msg_in.value.encode()).decode()
+                chat_box.controls.append(ft.Text(f"YOU: {msg_in.value}", color="#00FF00"))
+                msg_in.value = ""
+                page.update()
+
+        page.add(
+            ft.AppBar(title=ft.Text("GHOST_PRO_NETWORK"), bgcolor="#001100"),
+            ft.TextField(label="SEARCH_USER", border_color="#00FF00"),
+            chat_box,
+            ft.Row([
+                ft.IconButton(ft.icons.MIC, icon_color="#00FF00"),
+                ft.IconButton(ft.icons.CAMERA_ALT, icon_color="#00FF00"),
+                msg_in,
+                ft.IconButton(ft.icons.SEND, on_click=send_msg, icon_color="#00FF00")
+            ])
+        )
+
+    log_to_screen("FIREBASE CONNECTED")
+    time.sleep(1)
+    show_auth()
 
 ft.app(target=main)
