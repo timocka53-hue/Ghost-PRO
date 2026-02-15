@@ -1,4 +1,4 @@
-name: GHOST_PRO_beta
+name: GHOST_PRO_FINAL_BUILD
 on: [push]
 
 jobs:
@@ -9,21 +9,24 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Build APK
+      - name: Install Dependencies
         run: |
-          pip install flet
-          # Создаем файл зависимостей
+          pip install flet pyrebase4 cryptography requests
+          # Создаем файл требований, чтобы Flet упаковал их в APK
           echo "flet" > requirements.txt
           echo "pyrebase4" >> requirements.txt
           echo "cryptography" >> requirements.txt
           echo "requests" >> requirements.txt
-          # Чистая сборка БЕЗ лишних аргументов
+
+      - name: Build APK
+        run: |
+          # Чистая сборка без лишних флагов, которые ломали процесс
           flet build apk --project "Ghost PRO" --yes
             
-      - name: Upload Finished APK
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-beta
+          name: Ghost-PRO-Stable
           path: build/apk/*.apk
