@@ -1,4 +1,4 @@
-name: GHOST_PRO_FINAL_V2
+name: GHOST_PRO_FINAL_V4
 on: [push]
 
 jobs:
@@ -14,15 +14,14 @@ jobs:
       - name: Build APK
         run: |
           pip install flet
-          # Записываем зависимости для упаковки в APK
+          # Принудительно пакуем всё тяжелое
           echo "flet" > requirements.txt
           echo "cryptography" >> requirements.txt
           echo "pyrebase4" >> requirements.txt
-          # Сборка без ошибок в аргументах
           flet build apk --project "Ghost PRO" --yes
             
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Final
+          name: Ghost-PRO-Stable
           path: build/apk/*.apk
