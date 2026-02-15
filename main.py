@@ -1,222 +1,172 @@
 import flet as ft
+import random
 import time
 
 def main(page: ft.Page):
-    page.title = "GHOST PRO V6 ULTIMATE"
-    page.padding = 0
-    page.spacing = 0
+    page.title = "GHOST PRO V6"
+    page.theme_mode = ft.ThemeMode.DARK
     page.bgcolor = "#000000"
+    page.padding = 20
+    page.spacing = 0
+
+    # Переменные состояния
+    user_data = {"email": "", "uid": "@guest", "is_admin": False}
+
+    # --- КОМПОНЕНТЫ ДИЗАЙНА ---
     
-    # Полный код системы со всеми функциями
-    full_ghost_os = """
-    <!DOCTYPE html>
-    <html lang="ru">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-        <style>
-            body, html { margin: 0; padding: 0; background: #000; color: #00FF00; font-family: 'Courier New', monospace; height: 100%; overflow: hidden; }
-            canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.5; }
-            .ghost-card { border: 1px solid #00FF00; background: rgba(0, 15, 0, 0.95); box-shadow: 0 0 25px #00FF00; padding: 25px; }
-            .screen { display: none; height: 100vh; flex-direction: column; padding: 20px; z-index: 10; position: relative; box-sizing: border-box; }
-            .active { display: flex; }
-            input, textarea { background: rgba(0,0,0,0.8); border: 1px solid #00FF00; color: #00FF00; padding: 12px; outline: none; width: 100%; }
-            .btn { border: 1px solid #00FF00; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; background: rgba(0,30,0,0.6); }
-            .btn:active { background: #00FF00; color: #000; box-shadow: 0 0 40px #00FF00; }
-            .admin-border { border-color: #ff0000 !important; color: #ff0000 !important; }
-            .msg { margin-bottom: 12px; border-left: 3px solid #00FF00; padding-left: 10px; background: rgba(0, 255, 0, 0.05); }
-            .avatar-main { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #00FF00; object-fit: cover; box-shadow: 0 0 15px #00FF00; }
-            .glitch { animation: glitch 1.5s infinite; }
-            @keyframes glitch { 0% { transform: skew(0); } 20% { transform: skew(3deg); opacity: 0.8; } 40% { transform: skew(-3deg); } 100% { transform: skew(0); } }
-        </style>
-    </head>
-    <body>
-        <canvas id="matrix"></canvas>
+    def ghost_input(label, password=False, icon=ft.icons.LOCK_OUTLINE):
+        return ft.TextField(
+            label=label,
+            password=password,
+            can_reveal_password=True,
+            border_color="#00FF00",
+            color="#00FF00",
+            focused_border_color="#00FF00",
+            prefix_icon=icon,
+            text_size=14,
+            height=60,
+        )
 
-        <div id="auth-screen" class="screen active justify-center items-center">
-            <div class="ghost-card w-full max-w-sm space-y-5">
-                <h1 class="text-3xl text-center font-bold glitch tracking-[8px]">GHOST_PRO</h1>
-                <input type="email" id="email" placeholder="IDENTITY_EMAIL">
-                <input type="password" id="pass" placeholder="ACCESS_KEY">
-                <div class="btn" onclick="runAuth()">INITIALIZE_CONNECTION</div>
-                <p class="text-[9px] text-center opacity-40">PROTOCOL: AES-256-GCM | NODE: ENCRYPTED</p>
-            </div>
-        </div>
+    def ghost_button(text, on_click, color="#00FF00", bgcolor="#002200"):
+        return ft.Container(
+            content=ft.Text(text, color=color, weight="bold", size=14),
+            on_click=on_click,
+            alignment=ft.alignment.center,
+            bgcolor=bgcolor,
+            border=ft.border.all(1, color),
+            height=50,
+            border_radius=0,
+            animate=ft.animation.Animation(300, "decelerate"),
+        )
 
-        <div id="main-screen" class="screen">
-            <div class="flex justify-between items-center border-b border-green-500 pb-2 mb-3">
-                <span id="node-id" class="text-xs font-bold">NODE: GUEST</span>
-                <div class="flex space-x-3">
-                    <span id="admin-indicator" class="hidden text-red-500 font-bold animate-pulse text-xs">[ADMIN_MODE]</span>
-                    <span onclick="nav('profile-screen')" class="text-xs underline cursor-pointer">/IDENTITY/</span>
-                </div>
-            </div>
+    # --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ЭКРАНОВ ---
+    def show_screen(screen_name):
+        page.clean()
+        if screen_name == "auth":
+            page.add(auth_view)
+        elif screen_name == "2fa":
+            page.add(twofa_view)
+        elif screen_name == "chat":
+            page.add(chat_view)
+        elif screen_name == "admin":
+            page.add(admin_view)
+        elif screen_name == "profile":
+            page.add(profile_view)
+        page.update()
 
-            <div class="relative mb-3">
-                <input type="text" id="search" placeholder="SEARCH_BY_UID (@ghost_...)" class="h-10 text-xs pl-10">
-                <span class="absolute left-3 top-2.5 opacity-50">🔎</span>
-            </div>
+    # --- ЭКРАН 1: АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
+    email_inp = ghost_input("ENTER_EMAIL", icon=ft.icons.EMAIL_OUTLINED)
+    pass_inp = ghost_input("ENTER_PASSWORD", password=True)
 
-            <div id="chat-flow" class="flex-1 overflow-y-auto p-3 border border-green-900 bg-black/70 mb-3 space-y-3">
-                <div class="text-[10px] text-center opacity-30 italic">--- SECURE CHANNEL INITIALIZED ---</div>
-            </div>
+    def start_auth(e):
+        if not email_inp.value or not pass_inp.value:
+            return
+        user_data["email"] = email_inp.value
+        # Скрытый вход для админа
+        if email_inp.value == "adminpan" and pass_inp.value == "TimaIssam2026":
+            user_data["is_admin"] = True
+            user_data["uid"] = "@ADMIN_CORE"
+            show_screen("chat") # Админ заходит без 2FA
+        else:
+            show_screen("2fa")
 
-            <div id="admin-console" class="hidden mb-3 grid grid-cols-2 gap-2">
-                <div class="btn admin-border text-[10px] py-1" onclick="nav('admin-panel')">OPEN_CORE_CONTROL</div>
-                <div class="btn admin-border text-[10px] py-1" onclick="alert('GLOBAL_BROADCAST_READY')">BROADCAST</div>
-            </div>
+    auth_view = ft.Column([
+        ft.Container(height=50),
+        ft.Text("GHOST_PRO_V6", size=40, color="#00FF00", weight="bold", letter_spacing=10),
+        ft.Text("ENCRYPTED NETWORK ACCESS", size=10, color="#00FF00", opacity=0.5),
+        ft.Container(height=40),
+        email_inp,
+        ft.Container(height=10),
+        pass_inp,
+        ft.Container(height=20),
+        ghost_button("INITIALIZE_SESSION", start_auth),
+        ft.Row([ft.Text("VERIFICATION: ACTIVE", size=9, color="#00FF00")], alignment=ft.MainAxisAlignment.CENTER)
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
-            <div class="flex items-center space-x-2">
-                <button onclick="action('mic')" class="btn px-4 py-2">🎤</button>
-                <button onclick="action('cam')" class="btn px-4 py-2">🎥</button>
-                <button onclick="document.getElementById('img-up').click()" class="btn px-4 py-2">🖼️</button>
-                <input type="file" id="img-up" class="hidden" onchange="action('img')">
-                <input type="text" id="msg-input" placeholder="Enter encrypted payload..." class="flex-1 h-11">
-                <button onclick="sendMessage()" class="btn px-6 py-2">></button>
-            </div>
-        </div>
+    # --- ЭКРАН 2: 2FA И ПОЧТА ---
+    code_2fa = ghost_input("CONFIRMATION_CODE", icon=ft.icons.SECURITY)
 
-        <div id="admin-panel" class="screen">
-            <div class="border-b border-red-600 pb-2 mb-4 flex justify-between">
-                <h2 class="text-red-600 font-bold">CORE_ADMIN_PANEL</h2>
-                <button onclick="nav('main-screen')" class="text-xs">CLOSE</button>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="btn admin-border text-xs" onclick="alert('SEARCHING ALL NODES...')">BAN_USER</div>
-                <div class="btn admin-border text-xs" onclick="alert('FREEZING NETWORK...')">FREEZE_ID</div>
-                <div class="btn admin-border text-xs" onclick="alert('DELETING LOGS...')">WIPE_DATA</div>
-                <div class="btn admin-border text-xs" onclick="alert('PROTOCOL CHANGED')">REGEN_KEYS</div>
-            </div>
-            <p class="text-xs text-red-500 mb-2">INCOMING_TICKETS:</p>
-            <div id="admin-tickets" class="flex-1 overflow-y-auto space-y-2">
-                <div class="ghost-card p-3 border-red-900 flex justify-between items-center" onclick="openChat('@user_777')">
-                    <div class="text-[11px]">FROM: @user_777<br><span class="opacity-50 italic">"Security breach detected..."</span></div>
-                    <div class="btn admin-border py-1 px-3 text-[10px]">OPEN</div>
-                </div>
-            </div>
-        </div>
+    def verify_2fa(e):
+        user_data["uid"] = "@" + user_data["email"].split("@")[0]
+        show_screen("chat")
 
-        <div id="profile-screen" class="screen items-center space-y-6">
-            <h2 class="text-2xl font-bold tracking-widest">SYSTEM_ID</h2>
-            <div class="relative">
-                <img id="my-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Ghost" class="avatar-main">
-                <input type="file" id="av-change" class="hidden" onchange="updateAvatar(event)">
-                <button onclick="document.getElementById('av-change').click()" class="absolute bottom-0 right-0 bg-green-500 text-black px-2 py-1 text-[10px] font-bold">EDIT</button>
-            </div>
-            <input type="text" id="uid-input" placeholder="SET_UNIQUE_UID" class="text-center text-xl font-bold">
-            <div class="w-full space-y-3">
-                <button onclick="nav('support-screen')" class="w-full btn">CONTACT_ADMIN</button>
-                <button onclick="nav('main-screen')" class="w-full btn opacity-50">RETURN_TO_NET</button>
-            </div>
-        </div>
+    twofa_view = ft.Column([
+        ft.Text("2FA_VERIFICATION", size=20, color="#00FF00", weight="bold"),
+        ft.Text(f"CODE SENT TO: {user_data['email']}", size=10, color="#00FF00"),
+        ft.Container(height=20),
+        code_2fa,
+        ghost_button("VERIFY_IDENTITY", verify_2fa),
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
-        <div id="support-screen" class="screen">
-            <h2 class="text-xl mb-4 border-b border-green-500 pb-2">SECURE_SUPPORT_LINE</h2>
-            <div id="sup-chat" class="flex-1 overflow-y-auto p-3 mb-4 space-y-2">
-                <div class="msg text-xs"><span class="text-red-500 font-bold">[SYS]:</span> Describe your issue. Ticket will be created.</div>
-            </div>
-            <div class="flex space-x-2">
-                <input type="text" id="sup-msg" placeholder="Message to admin..." class="flex-1">
-                <button onclick="sendTicket()" class="btn px-6">SEND</button>
-            </div>
-        </div>
+    # --- ЭКРАН 3: ЧАТ И ПОИСК ---
+    chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+    msg_inp = ft.TextField(hint_text="Type payload...", border_color="#004400", expand=True, color="#00FF00")
 
-        <script>
-            let isAdmin = false;
-            let currentUID = "@guest";
-            const AES_KEY = "ghost_secret_2026";
+    def send_msg(e):
+        if not msg_inp.value: return
+        chat_list.controls.append(
+            ft.Container(
+                content=ft.Column([
+                    ft.Text(user_data["uid"], size=10, color=ft.colors.BLUE_400, weight="bold"),
+                    ft.Text(msg_inp.value, color="#00FF00", size=14)
+                ]),
+                border=ft.border.only(left=ft.BorderSide(2, "#00FF00")),
+                padding=ft.padding.only(left=10)
+            )
+        )
+        msg_inp.value = ""
+        page.update()
 
-            // Matrix Rain
-            const canvas = document.getElementById('matrix');
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            const chars = "77701GHOSTPRO";
-            const fontSize = 16;
-            const columns = canvas.width/fontSize;
-            const drops = Array(Math.floor(columns)).fill(1);
-            function draw() {
-                ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
-                ctx.fillStyle = "#0F0"; ctx.font = fontSize+"px monospace";
-                drops.forEach((y, i) => {
-                    ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fontSize, y*fontSize);
-                    if(y*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                });
-            }
-            setInterval(draw, 35);
+    chat_view = ft.Column([
+        ft.Row([
+            ft.Text("GHOST_NET", color="#00FF00", weight="bold"),
+            ft.Row([
+                ft.IconButton(ft.icons.ADMIN_PANEL_SETTINGS, icon_color="red", visible=user_data["is_admin"], on_click=lambda _: show_screen("admin")),
+                ft.IconButton(ft.icons.PERSON, icon_color="#00FF00", on_click=lambda _: show_screen("profile")),
+            ])
+        ], justify=ft.MainAxisAlignment.SPACE_BETWEEN),
+        ft.TextField(hint_text="SEARCH_UID (@user...)", prefix_icon=ft.icons.SEARCH, border_color="#004400", height=40),
+        ft.Container(content=chat_list, expand=True, border=ft.border.all(1, "#002200"), padding=10, bgcolor="#050505"),
+        ft.Row([
+            ft.IconButton(ft.icons.MIC, icon_color="#00FF00", on_click=lambda _: page.show_snack_bar(ft.SnackBar(ft.Text("REC_AUDIO...")))),
+            ft.IconButton(ft.icons.VIDEOCAM, icon_color="#00FF00", on_click=lambda _: page.show_snack_bar(ft.SnackBar(ft.Text("REC_VIDEO...")))),
+            msg_inp,
+            ft.IconButton(ft.icons.SEND, icon_color="#00FF00", on_click=send_msg),
+        ])
+    ], expand=True)
 
-            function nav(id) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(id).classList.add('active');
-            }
+    # --- ЭКРАН 4: АДМИНКА (GOD MODE) ---
+    admin_view = ft.Column([
+        ft.Row([ft.Text("CORE_CONTROL", size=20, color="red", weight="bold"), ft.IconButton(ft.icons.CLOSE, on_click=lambda _: show_screen("chat"))], justify=ft.MainAxisAlignment.SPACE_BETWEEN),
+        ft.Divider(color="red"),
+        ft.GridView([
+            ghost_button("BAN_USER", lambda _: None, color="red"),
+            ghost_button("FREEZE_NET", lambda _: None, color="red"),
+            ghost_button("BROADCAST", lambda _: None, color="red"),
+            ghost_button("WIPE_LOGS", lambda _: None, color="red"),
+        ], runs_count=2, spacing=10, height=120),
+        ft.Text("ACTIVE_TICKETS:", size=12, color="red"),
+        ft.ListView(expand=True, controls=[
+            ft.ListTile(title=ft.Text("FROM: @user_777", color="white"), subtitle=ft.Text("I need help with login", color="gray"), trailing=ft.TextButton("REPLY", on_click=lambda _: show_screen("chat")))
+        ])
+    ], expand=True)
 
-            function runAuth() {
-                const e = document.getElementById('email').value;
-                const p = document.getElementById('pass').value;
-                if(e === "adminpan" && p === "TimaIssam2026") {
-                    isAdmin = true;
-                    currentUID = "@ADMIN_PRO";
-                    document.getElementById('node-id').innerText = "NODE: MASTER_ADMIN";
-                    document.getElementById('node-id').style.color = "#ff0000";
-                    document.getElementById('admin-indicator').classList.remove('hidden');
-                    document.getElementById('admin-console').classList.remove('hidden');
-                    nav('main-screen');
-                } else {
-                    currentUID = "@" + (e.split('@')[0] || "ghost");
-                    nav('main-screen');
-                }
-                document.getElementById('uid-input').value = currentUID;
-            }
+    # --- ЭКРАН 5: ПРОФИЛЬ ---
+    def change_avatar(e):
+        page.show_snack_bar(ft.SnackBar(ft.Text("ACCESSING GALLERY...")))
 
-            function sendMessage() {
-                const inp = document.getElementById('msg-input');
-                if(!inp.value) return;
-                const encrypted = CryptoJS.AES.encrypt(inp.value, AES_KEY).toString();
-                console.log("SENDING_ENCRYPTED:", encrypted);
-                
-                const box = document.getElementById('chat-flow');
-                box.innerHTML += `<div class="msg"><span class="text-blue-400 font-bold">${currentUID}:</span><br>${inp.value}</div>`;
-                inp.value = "";
-                box.scrollTop = 99999;
-            }
+    profile_view = ft.Column([
+        ft.Container(height=20),
+        ft.CircleAvatar(content=ft.Icon(ft.icons.PERSON, size=60), radius=60, bgcolor="#002200"),
+        ft.TextButton("CHANGE_AVATAR", on_click=change_avatar),
+        ft.Text(user_data["uid"], size=24, color="#00FF00", weight="bold"),
+        ft.Container(height=20),
+        ghost_button("CONTACT_TECH_SUPPORT", lambda _: page.show_snack_bar(ft.SnackBar(ft.Text("TICKET_CREATED")))),
+        ghost_button("LOGOUT", lambda _: show_screen("auth"), color="red"),
+        ft.TextButton("BACK_TO_NETWORK", on_click=lambda _: show_screen("chat"))
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
-            function action(type) {
-                alert("INITIALIZING " + type.toUpperCase() + " MODULE...");
-            }
-
-            function sendTicket() {
-                const val = document.getElementById('sup-msg').value;
-                if(!val) return;
-                document.getElementById('sup-chat').innerHTML += `<div class="msg text-xs"><span class="text-blue-500 font-bold">YOU:</span><br>${val}</div>`;
-                document.getElementById('sup-msg').value = "";
-                alert("TICKET_CREATED: Admin notified.");
-            }
-
-            function updateAvatar(event) {
-                const r = new FileReader();
-                r.onload = () => document.getElementById('my-avatar').src = r.result;
-                r.readAsDataURL(event.target.files[0]);
-            }
-
-            function openChat(uid) {
-                alert("OPENING TERMINAL WITH " + uid);
-                nav('main-screen');
-            }
-        </script>
-    </body>
-    </html>
-    """
-
-    # Ультра-безопасная загрузка
-    time.sleep(1) # Даем Android время подготовить WebView
-    
-    wv = ft.WebView(
-        html_content=full_ghost_os,
-        expand=True,
-    )
-
-    page.add(wv)
+    # Запуск
+    show_screen("auth")
 
 ft.app(target=main)
