@@ -1,27 +1,16 @@
-name: GHOST_PRO_FINAL_V4
+name: GHOST_PRO_BUILD
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       - name: Build APK
         run: |
           pip install flet
-          # Принудительно пакуем всё тяжелое
-          echo "flet" > requirements.txt
-          echo "cryptography" >> requirements.txt
-          echo "pyrebase4" >> requirements.txt
           flet build apk --project "Ghost PRO" --yes
-            
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Stable
+          name: Ghost-PRO-Ultimate
           path: build/apk/*.apk
