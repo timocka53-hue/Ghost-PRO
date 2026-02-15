@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GHOST PRO ULTIMATE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html { margin: 0; padding: 0; background: #000; color: #00FF00; font-family: 'Courier New', monospace; height: 100%; overflow: hidden; }
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.3; }
+        .screen { display: none; height: 100vh; flex-direction: column; padding: 15px; z-index: 10; position: relative; }
+        .active { display: flex; }
+        .ghost-card { border: 1px solid #00FF00; background: rgba(0, 15, 0, 0.95); box-shadow: 0 0 15px #00FF00; }
+        input, textarea { background: #000; border: 1px solid #00FF00; color: #00FF00; padding: 10px; outline: none; }
+        .btn { border: 1px solid #00FF00; padding: 10px; text-align: center; cursor: pointer; text-transform: uppercase; font-weight: bold; }
+        .btn:active { background: #00FF00; color: #000; }
+        .admin-btn { border-color: #ff0000; color: #ff0000; }
+        .msg-line { margin-bottom: 10px; padding: 5px; border-left: 2px solid #00FF00; font-size: 13px; }
+        .avatar-circle { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00FF00; object-fit: cover; }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+
+    <div id="auth-screen" class="screen active justify-center items-center">
+        <div class="ghost-card p-6 w-full max-w-xs space-y-4">
+            <h1 class="text-2xl text-center font-bold tracking-widest animate-pulse">GHOST_PRO</h1>
+            <input type="text" id="login-id" placeholder="USERNAME / EMAIL">
+            <input type="password" id="login-pass" placeholder="PASSWORD">
+            <div onclick="initAuth()" class="btn">LOG_IN</div>
+            <div onclick="initAuth()" class="text-[10px] text-center opacity-50 underline">CREATE NEW IDENTITY</div>
+        </div>
+    </div>
+
+    <div id="admin-screen" class="screen">
+        <div class="flex justify-between items-center border-b border-red-600 pb-2 mb-4">
+            <span class="text-red-600 font-bold">CORE_CONTROL</span>
+            <button onclick="nav('chat-screen')" class="text-[10px] border border-red-600 px-1">GUEST_VIEW</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+            <div class="btn admin-btn text-[10px]">BAN_USER</div>
+            <div class="btn admin-btn text-[10px]">FREEZE_ID</div>
+            <div class="btn admin-btn text-[10px]">UNBAN_ALL</div>
+            <div class="btn admin-btn text-[10px]">BROADCAST</div>
+        </div>
+        <div class="text-xs mb-2">ACTIVE_TICKETS (REAL_TIME):</div>
+        <div id="tickets-area" class="flex-1 overflow-y-auto space-y-2">
+            <div onclick="openSupportChat('@user_x')" class="ghost-card p-2 border-red-900 cursor-pointer">
+                <div class="flex justify-between text-[10px]"><span>FROM: @user_x</span><span class="text-red-500">● NEW</span></div>
+                <div class="text-[11px] italic">"Help, I can't send video files..."</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-screen" class="screen">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-xs">GHOST_NETWORK</span>
+            <div onclick="nav('profile-screen')" class="btn py-1 px-3 text-[10px]">PROFILE</div>
+        </div>
+        <input type="text" id="search-user" placeholder="SEARCH BY UID (@user...)" class="mb-4 h-9 text-xs">
+        <div id="chat-content" class="flex-1 overflow-y-auto border border-green-900 p-2 mb-2 bg-black/40">
+            <div class="text-[9px] text-center opacity-40">SELECT USER TO START CONVERSATION</div>
+        </div>
+        <div class="flex flex-col space-y-2">
+            <div class="flex space-x-2">
+                <button onclick="media('audio')" class="btn px-3">🎤</button>
+                <button onclick="media('video')" class="btn px-3">🎥</button>
+                <button onclick="media('photo')" class="btn px-3">🖼️</button>
+                <input type="text" id="main-input" placeholder="Secure message..." class="flex-1 h-10">
+                <button onclick="send()" class="btn px-4">></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-screen" class="screen items-center space-y-4">
+        <h2 class="text-xl">SYSTEM_IDENTITY</h2>
+        <div class="relative">
+            <img id="my-avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Ghost" class="avatar-circle">
+            <input type="file" id="avatar-input" class="hidden" onchange="updateAvatar(event)">
+            <button onclick="document.getElementById('avatar-input').click()" class="absolute bottom-0 right-0 bg-green-500 text-black px-1 text-[10px]">CHANGE</button>
+        </div>
+        <input type="text" id="my-uid" placeholder="SET YOUR UID" class="text-center">
+        <button onclick="nav('support-screen')" class="w-full btn text-sm">CONTACT_SUPPORT</button>
+        <button id="admin-shortcut" onclick="nav('admin-screen')" class="w-full btn admin-btn text-sm hidden">ADMIN_PANEL</button>
+        <button onclick="nav('chat-screen')" class="w-full opacity-50">BACK</button>
+    </div>
+
+    <div id="support-screen" class="screen">
+        <div class="border-b border-green-500 pb-2 mb-2">SUPPORT_DIRECT_LINE</div>
+        <div id="support-chat" class="flex-1 overflow-y-auto p-2">
+            <div class="msg-line"><span class="text-red-500">SYS:</span> State your problem.</div>
+        </div>
+        <div class="flex space-x-2">
+            <input type="text" id="support-in" placeholder="Message to Admin..." class="flex-1">
+            <button onclick="sendToSupport()" class="btn px-4">SEND</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = "@guest";
+        let isAdmin = false;
+
+        // MATRIX BACKGROUND
+        const c = document.getElementById('matrix');
+        const ctx = c.getContext('2d');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const chars = "77701GHOSTPRO";
+        const fontSize = 16;
+        const columns = c.width/fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+        function draw() {
+            ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
+            ctx.fillStyle = "#0F0"; ctx.font = fontSize+"px monospace";
+            drops.forEach((y, i) => {
+                ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fontSize, y*fontSize);
+                if(y*fontSize > c.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            });
+        }
+        setInterval(draw, 35);
+
+        // NAVIGATION
+        function nav(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // AUTH
+        function initAuth() {
+            const login = document.getElementById('login-id').value;
+            const pass = document.getElementById('login-pass').value;
+            
+            if(login === "adminpan" && pass === "TimaIssam2026") {
+                isAdmin = true;
+                currentUser = "@ADMIN_CORE";
+                document.getElementById('admin-shortcut').classList.remove('hidden');
+                nav('admin-screen'); // Админ сразу в панель
+            } else {
+                currentUser = "@" + (login || "user");
+                document.getElementById('u-uid').value = currentUser;
+                nav('chat-screen');
+            }
+        }
+
+        // CHAT & MEDIA
+        function send() {
+            const val = document.getElementById('main-input').value;
+            if(!val) return;
+            document.getElementById('chat-content').innerHTML += `<div class="msg-line"><span class="font-bold">${currentUser}:</span> ${val}</div>`;
+            document.getElementById('main-input').value = "";
+        }
+
+        function media(type) {
+            alert("ACCESSING " + type.toUpperCase() + "...");
+            // Реальный доступ к камере/микрофону через браузерный API
+        }
+
+        // SUPPORT
+        function sendToSupport() {
+            const val = document.getElementById('support-in').value;
+            document.getElementById('support-chat').innerHTML += `<div class="msg-line"><span class="text-blue-500">YOU:</span> ${val}</div>`;
+            document.getElementById('support-in').value = "";
+            alert("ADMIN NOTIFIED!");
+        }
+
+        function openSupportChat(uid) {
+            alert("OPENING DIRECT CHAT WITH " + uid);
+            nav('chat-screen'); // Админ переходит в чат с этим юзером
+        }
+
+        function updateAvatar(event) {
+            const reader = new FileReader();
+            reader.onload = () => document.getElementById('my-avatar').src = reader.result;
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    </script>
+</body>
+</html>
