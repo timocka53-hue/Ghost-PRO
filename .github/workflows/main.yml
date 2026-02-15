@@ -1,4 +1,4 @@
-name: GHOST_PRO_Beta
+name: GHOST_PRO_BETA
 on: [push]
 
 jobs:
@@ -9,21 +9,23 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
 
-      - name: Build Heavy APK
+      - name: Install Tools
         run: |
           pip install flet pyrebase4 cryptography requests
-          # Создаем файл требований
           echo "flet" > requirements.txt
           echo "pyrebase4" >> requirements.txt
           echo "cryptography" >> requirements.txt
           echo "requests" >> requirements.txt
-          # Сборка без экспериментальных флагов, чтобы избежать "unrecognized arguments"
+
+      - name: Build Android APK
+        run: |
+          # Собираем с принудительным включением зависимостей
           flet build apk --project "Ghost PRO" --yes
             
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Ghost-PRO-Beta
+          name: Ghost-PRO-Full-Pack
           path: build/apk/*.apk
