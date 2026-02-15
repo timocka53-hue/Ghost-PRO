@@ -1,4 +1,4 @@
-name: GHOST_PRO_BUILD
+name: GHOST_PRO_ULTIMATE
 on: [push]
 jobs:
   build:
