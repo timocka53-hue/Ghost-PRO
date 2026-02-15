@@ -1,13 +1,13 @@
 import flet as ft
 import pyrebase
 import base64
+import os
 from cryptography.fernet import Fernet
 
-# --- ГЕНЕРАЦИЯ ВАЛИДНОГО КЛЮЧА ---
-# Этот ключ на 100% соответствует стандарту Fernet (32 url-safe base64 bytes)
-# Больше ошибки ValueError не будет.
-SAFE_KEY = b'6J_B_8_P_Z_R_W_X_Y_Z_A_B_C_D_E_F_G_H_I_J_K_L_M='
-cipher = Fernet(SAFE_KEY)
+# АВТО-ГЕНЕРАЦИЯ КЛЮЧА (Чтобы никогда не было ValueError)
+# Система сама создаст идеальный 32-байтный ключ при запуске
+cipher_key = Fernet.generate_key()
+cipher = Fernet(cipher_key)
 
 config = {
     "apiKey": "AIzaSyAbiRCuR9egtHKg0FNzzBdL9dNqPqpPLNk",
@@ -32,19 +32,17 @@ def main(page: ft.Page):
         terminal.controls.append(ft.Text(f"> {msg}", color=color, font_family="monospace", size=12))
         page.update()
 
-    # ПОЛЯ ИНТЕРФЕЙСА
     email_f = ft.TextField(label="EMAIL / ADMIN_PAN", border_color="#00FF00", color="#00FF00")
     pass_f = ft.TextField(label="PASSWORD", password=True, border_color="#00FF00", color="#00FF00")
     search_f = ft.TextField(label="SEARCH_USER (@username)", border_color="#00FF00")
 
     def handle_login(e):
-        # ТВОЯ АДМИНКА adminpan / TimaIssam2026
+        # ТВОЯ АДМИНКА
         if email_f.value == "adminpan" and pass_f.value == "TimaIssam2026":
             user_session["name"] = "ADMIN_PRO"
             log("ACCESS GRANTED: ADMIN MODE", "yellow")
             page.go("/chat")
             return
-        
         try:
             firebase = pyrebase.initialize_app(config)
             auth = firebase.auth()
@@ -60,7 +58,7 @@ def main(page: ft.Page):
         if page.route == "/":
             page.views.append(
                 ft.View("/", [
-                    ft.Text("GHOST_OS: ENCRYPTED_V2", color="#00FF00", size=22, weight="bold"),
+                    ft.Text("GHOST_OS: ENCRYPTED_V3", color="#00FF00", size=22, weight="bold"),
                     ft.Container(terminal, border=ft.border.all(1, "#00FF00"), padding=10, bgcolor="#000800"),
                     email_f, pass_f,
                     ft.ElevatedButton("INITIALIZE", on_click=handle_login, bgcolor="#115511", color="white", width=400)
@@ -72,7 +70,6 @@ def main(page: ft.Page):
             
             def send(e):
                 if msg_input.value:
-                    # ШИФРОВАНИЕ ПЕРЕД ОТПРАВКОЙ
                     enc = cipher.encrypt(msg_input.value.encode()).decode()
                     chat_list.controls.append(ft.Text(f"YOU: {msg_input.value}", color="#00FF00"))
                     msg_input.value = ""
@@ -85,8 +82,8 @@ def main(page: ft.Page):
                     ft.Divider(color="#00FF00"),
                     chat_list,
                     ft.Row([
-                        ft.IconButton(ft.icons.MIC, icon_color="#00FF00", tooltip="Voice"),
-                        ft.IconButton(ft.icons.IMAGE, icon_color="#00FF00", tooltip="Media"),
+                        ft.IconButton(ft.icons.MIC, icon_color="#00FF00"),
+                        ft.IconButton(ft.icons.IMAGE, icon_color="#00FF00"),
                         msg_input,
                         ft.IconButton(ft.icons.SEND, on_click=send, icon_color="#00FF00")
                     ])
